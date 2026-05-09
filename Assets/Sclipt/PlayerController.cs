@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
@@ -8,20 +9,36 @@ public class PlayerController : MonoBehaviour
     //物理演算コンポーネント
     [SerializeField] private Rigidbody rigidbody;
 
+    private Vector2 moveInput = Vector2.zero;
+
     //移動方向のベクトル
     private Vector3 moveDireection = Vector3.zero;
+
+    private PlayerInputActions inputActions;
+    private Vector3 moveDirection;
 
     //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
     public Vector3 CurrentVelocity { get; private set; }
 
+    private void Awake()
+    {
+        inputActions = new PlayerInputActions();
+        inputActions.Player.Fire.performed += OnFire;
+    }
+
+    private void OnEnable()
+    {
+        inputActions.Enable();
+    }
+    private void OnDisable()
+    {
+        inputActions.Disable();
+    }
+
 
     void Update()
     {
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
-
-        //入力値から移動方向のベクトルを作成する
-        moveDireection = new Vector3(x, 0, z).normalized;
+        moveInput = inputActions.Player.Move.ReadValue<Vector2>();
     }
     private void FixedUpdate()
     {
@@ -36,7 +53,7 @@ public class PlayerController : MonoBehaviour
         }
 
         //入力がない場合はピタッと止めておく
-        if(moveDireection == Vector3.zero)
+        if(moveInput == Vector2.zero)
         {
             rigidbody.linearVelocity = new Vector3(0,rigidbody.linearVelocity.y,0);
             CurrentVelocity = Vector3.zero;
@@ -44,13 +61,14 @@ public class PlayerController : MonoBehaviour
         }
 
         //実際の移動速度計算
-        Vector3 targetVelocity = moveDireection * moveSpeed;
+        Vector3 targetVelocity = new Vector3(moveInput.x,rigidbody.linearVelocity.y,moveInput.y);
+        targetVelocity.Normalize();
 
-        rigidbody.linearVelocity = new Vector3(
-            targetVelocity.x,
-            rigidbody.linearVelocity.y,
-            targetVelocity.z);
+        rigidbody.linearVelocity = targetVelocity * moveSpeed;
+    }
 
-        CurrentVelocity = rigidbody.linearVelocity;
+    private void OnFire(InputAction.CallbackContext context)
+    {
+        Debug.Log("Fire");
     }
 }

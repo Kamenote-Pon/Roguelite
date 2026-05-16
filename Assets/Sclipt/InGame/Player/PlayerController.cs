@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+namespace TPSRoguelite.InGame.Player { 
+
 public class PlayerController : MonoBehaviour
 {
     //ˆÚ“®‘¬“x
@@ -71,4 +73,5 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log("Fire");
     }
+}
 }

@@ -4,74 +4,131 @@ using UnityEngine.InputSystem;
 namespace TPSRoguelite.InGame.Player { 
 
 public class PlayerController : MonoBehaviour
-{
-    //移動速度
-    private const float moveSpeed = 5.0f;
+　　{
+　　    //移動速度
+　　    private const float moveSpeed = 5.0f;
+　　
+        //回転速度
+　　    private const float ROTATE_SPEED = 10f;
 
-    //物理演算コンポーネント
-    [SerializeField] private Rigidbody rigidbody;
+        //
+        private const float LASER_MAX_DISTANCE = 50f;
+　　
+　　    //物理演算コンポーネント
+　　    [SerializeField] private Rigidbody rigidbody;
 
-    private Vector2 moveInput = Vector2.zero;
+        //銃口のトランスフォーム
+        [SerializeField] private Transform weponOrigin;
+        
+        //レーザープリンターの描画コンポーネント
+        [SerializeField] private LineRenderer laserLineRenderer;
 
-    //移動方向のベクトル
-    private Vector3 moveDireection = Vector3.zero;
+        //自動生成されたインプット
+        private PlayerInputActions inputActions;
 
-    private PlayerInputActions inputActions;
-    private Vector3 moveDirection;
+        private Vector2 moveInput;
 
-    //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
-    public Vector3 CurrentVelocity { get; private set; }
+        private Transform mainCameraTransform;
+　　
+　　    //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
+　　    public Vector3 CurrentVelocity { get; private set; }
+　　
+　　    private void Awake()
+　　    {
+　　        inputActions = new PlayerInputActions();
+　　        inputActions.Player.Fire.performed += OnFire;
 
-    private void Awake()
-    {
-        inputActions = new PlayerInputActions();
-        inputActions.Player.Fire.performed += OnFire;
-    }
+　　        if (UnityEngine.Camera.main != null) 
+　　        {
+　　            mainCameraTransform = UnityEngine.Camera.main.transform;
+　　        }
+　　        else
+　　        {
+　　            Debug.LogError("MainCameraが見つかりません");
+　　        }
+　　    }
+　　
+　　    private void OnEnable()
+　　    {
+　　        inputActions.Enable();
+　　    }
+　　    private void OnDisable()
+　　    {
+　　        inputActions.Disable();
+　　    }
+　　
+　　
+　　    void Update()
+　　    {
+　　        moveInput = inputActions.Player.Move.ReadValue<Vector2>();
+            DrawLaserPointer();
+　　    }
+　　    private void FixedUpdate()
+　　    {
+　　        Move();
+　　    }
+　　    private void Move()//移動処理
+　　    {
+　　        if(rigidbody == null)
+　　        {
+　　            Debug.LogError("Rigidbodyが設定されていません");
+　　            return;
+　　        }
+　　
+　　        //入力がない場合はピタッと止めておく
+　　        if(moveInput == Vector2.zero)
+　　        {
+　　            rigidbody.linearVelocity = new Vector3(0,rigidbody.linearVelocity.y,0);
+　　            CurrentVelocity = Vector3.zero;
+　　            return;
+　　        }
+　　
+　　        //カメラ基準の計算に変更
+            Vector3 cameraFoward = mainCameraTransform.forward;
+            Vector3 cameraRight = mainCameraTransform.right;
 
-    private void OnEnable()
-    {
-        inputActions.Enable();
-    }
-    private void OnDisable()
-    {
-        inputActions.Disable();
-    }
+            cameraFoward.y = 0f;
+            cameraRight.y = 0f;
+            cameraFoward.Normalize();
+            cameraRight.Normalize();
 
+            Vector3 moveDirection = (cameraFoward * moveInput.y + cameraRight * moveInput.x).normalized;
 
-    void Update()
-    {
-        moveInput = inputActions.Player.Move.ReadValue<Vector2>();
-    }
-    private void FixedUpdate()
-    {
-        Move();
-    }
-    private void Move()//移動処理
-    {
-        if(rigidbody == null)
+            //キャラクターを進行方向へ滑らかに振り向かせる
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            rigidbody.rotation = Quaternion.Slerp(rigidbody.rotation,targetRotation,ROTATE_SPEED * Time.deltaTime);
+
+            Vector3 targetVelocity = moveDirection * moveSpeed;
+            rigidbody.linearVelocity = new Vector3(targetVelocity.x, rigidbody.linearVelocity.y, targetVelocity.z);
+
+　　        //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
+　　        CurrentVelocity = rigidbody.linearVelocity;
+　　    }
+　　
+　　    private void OnFire(InputAction.CallbackContext context)
+　　    {
+　　        Debug.Log("Fire");
+　　    }
+
+        //レーザーポインターの描画
+        private void DrawLaserPointer()
         {
-            Debug.LogError("Rigidbodyが設定されていません");
-            return;
+            if (laserLineRenderer == null || weponOrigin == null || mainCameraTransform == null)
+            {
+                return;
+            }
+
+            laserLineRenderer.SetPosition(0, weponOrigin.position);
+
+            Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
+            if(Physics.Raycast(ray,out RaycastHit hitinfo,LASER_MAX_DISTANCE))
+            {
+                laserLineRenderer.SetPosition(1,hitinfo.point);
+            }
+            else
+            {
+                laserLineRenderer.SetPosition(1,ray.GetPoint(LASER_MAX_DISTANCE));
+            }
         }
-
-        //入力がない場合はピタッと止めておく
-        if(moveInput == Vector2.zero)
-        {
-            rigidbody.linearVelocity = new Vector3(0,rigidbody.linearVelocity.y,0);
-            CurrentVelocity = Vector3.zero;
-            return;
-        }
-
-        //実際の移動速度計算
-        Vector3 targetVelocity = new Vector3(moveInput.x,rigidbody.linearVelocity.y,moveInput.y);
-        targetVelocity.Normalize();
-
-        rigidbody.linearVelocity = targetVelocity * moveSpeed;
-    }
-
-    private void OnFire(InputAction.CallbackContext context)
-    {
-        Debug.Log("Fire");
-    }
-}
+　　}
 }

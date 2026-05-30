@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2645070344024862397}
   - component: {fileID: 7184961855916582538}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: WeponOrigin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -56,7 +56,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: ae1d2c11c6a0928448c5f9cbf9f629ec, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -78,8 +78,8 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 1}
+  - {x: 0, y: 1, z: 0}
+  - {x: 0, y: 1, z: 1}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -153,7 +153,7 @@ GameObject:
   - component: {fileID: 3688092749752359686}
   - component: {fileID: 1261087964949416205}
   - component: {fileID: 9193660413042608954}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}

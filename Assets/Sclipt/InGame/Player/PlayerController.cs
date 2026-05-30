@@ -1,5 +1,8 @@
+using Core.InterFsce;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Cysharp.Threading.Tasks;
+using System;
 
 namespace TPSRoguelite.InGame.Player { 
 
@@ -11,9 +14,21 @@ public class PlayerController : MonoBehaviour
         //回転速度
 　　    private const float ROTATE_SPEED = 10f;
 
-        //
+        //レーザーポインターの描画距離
         private const float LASER_MAX_DISTANCE = 50f;
-　　
+
+        //相手に与えるダメージ量
+        private const int ATACK_DAMAGE = 20;
+
+        //攻撃距離(射撃範囲)
+        private const float ATACK_RANGE = 50;
+
+        //最大弾数
+        private const int MAX_AMMO = 30;
+
+        //リロード時間
+        private const float RELOAD_TIME = 1.5f;
+
 　　    //物理演算コンポーネント
 　　    [SerializeField] private Rigidbody rigidbody;
 
@@ -29,14 +44,23 @@ public class PlayerController : MonoBehaviour
         private Vector2 moveInput;
 
         private Transform mainCameraTransform;
+
+        //リロードしているか
+        private bool isReloading;
 　　
+        //現在の弾数
+        public int CurrentAmmo {  get; private set; }
+
 　　    //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
 　　    public Vector3 CurrentVelocity { get; private set; }
 　　
 　　    private void Awake()
 　　    {
+            CurrentAmmo = MAX_AMMO;
+
 　　        inputActions = new PlayerInputActions();
 　　        inputActions.Player.Fire.performed += OnFire;
+            inputActions.Player.Reload.performed += OnReload;
 
 　　        if (UnityEngine.Camera.main != null) 
 　　        {
@@ -107,8 +131,45 @@ public class PlayerController : MonoBehaviour
 　　
 　　    private void OnFire(InputAction.CallbackContext context)
 　　    {
-　　        Debug.Log("Fire");
+　　        Ray ray = new Ray(mainCameraTransform.position,mainCameraTransform.forward);
+
+            //光線に何かが当たったか判定
+            if (Physics.Raycast(ray,out RaycastHit hitInfo, ATACK_RANGE))
+            {
+                Debug.Log($"{hitInfo.collider.name}に命中!");
+
+                //当たった相手がIDamageableを持っているか
+                IDamageable target = hitInfo.collider.GetComponent<IDamageable>();
+
+                //
+                if (target != null)
+                {
+                    target.TakeDamage(ATACK_DAMAGE);
+                }
+            }
 　　    }
+
+        private void OnReload(InputAction.CallbackContext context)
+        {
+            if (isReloading || CurrentAmmo == MAX_AMMO)
+            {
+                return;
+            }
+            ReloadAsync().Forget();
+        }
+
+        private async UniTask ReloadAsync()
+        {
+            isReloading = true;
+            Debug.Log("リロード中");
+
+            await UniTask.Delay(TimeSpan.FromSeconds(RELOAD_TIME), cancellationToken: this.GetCancellationTokenOnDestroy());
+
+            CurrentAmmo = MAX_AMMO;
+            isReloading = false;
+            Debug.Log("リロード完了");
+        }
+
 
         //レーザーポインターの描画
         private void DrawLaserPointer()

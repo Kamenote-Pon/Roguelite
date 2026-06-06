@@ -1,9 +1,10 @@
 using UnityEngine;
 using Core.InterFsce;
+using UnityEngine.Events;
 
 namespace TPSRoguelite.InGame.Enemy 
 {
-    public class EnemyStatu : MonoBehaviour,IDamageable
+    public class EnemyState : MonoBehaviour,IDamageable
     {
         //ëÃóÕÇÃç≈ëÂíl
         private const int MAX_HP = 100;
@@ -11,10 +12,17 @@ namespace TPSRoguelite.InGame.Enemy
         //åªç›ÇÃëÃóÕ
         public int CurrentHP { get; private set; }
 
+
+        public event UnityAction<EnemyState> OnRetuenToPoolAction;
         
         private void Awake()
         {
                 CurrentHP = MAX_HP;
+        }
+
+        private void OnEnable()
+        {
+            CurrentHP = MAX_HP;
         }
 
         public void TakeDamage(int damageAmount)
@@ -37,7 +45,8 @@ namespace TPSRoguelite.InGame.Enemy
         private void Die()
         {
             Debug.Log("ìGÇì|ÇµÇ‹ÇµÇΩ");
-            Destroy(gameObject);
+            gameObject.SetActive(false);
+            OnRetuenToPoolAction?.Invoke(this);
         }
     }
 }

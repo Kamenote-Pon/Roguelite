@@ -6,7 +6,10 @@ namespace TPSRoguelite.InGame.Enemy
     public class EnemyController : MonoBehaviour
     {
         //
-        //private const string PLAYER_TAG_NAME;
+        private const string PLAYER_TAG_NAME ="Player";
+
+        //敵の本体
+        [SerializeField] private EnemyState enemystate = null;
 
         //NavMeshAgent
         [SerializeField] private NavMeshAgent navMeshAgent = null;
@@ -29,6 +32,11 @@ namespace TPSRoguelite.InGame.Enemy
                 //Debug.LogError($"{PLAYER_TAG_NAME}というタグの付いたオブジェクトが見つかりませんでした。");
                 Debug.LogError("Playerというタグの付いたオブジェクトが見つかりませんでした。");
 
+            }
+
+            if(navMeshAgent != null && enemystate != null && enemystate.EnemyDataAsset != null)
+            {
+                navMeshAgent.speed = enemystate.EnemyDataAsset.MoveSpeed;
             }
 
         }

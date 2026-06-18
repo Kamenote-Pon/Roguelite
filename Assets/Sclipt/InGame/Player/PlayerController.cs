@@ -1,8 +1,10 @@
-using Core.InterFsce;
+using Core.InterFace;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Cysharp.Threading.Tasks;
 using System;
+using TPSRoguelite.InGame.Data;
+using System.Threading;
 
 namespace TPSRoguelite.InGame.Player { 
 
@@ -17,17 +19,8 @@ public class PlayerController : MonoBehaviour
         //レーザーポインターの描画距離
         private const float LASER_MAX_DISTANCE = 50f;
 
-        //相手に与えるダメージ量
-        private const int ATACK_DAMAGE = 20;
-
         //攻撃距離(射撃範囲)
         private const float ATACK_RANGE = 50;
-
-        //最大弾数
-        private const int MAX_AMMO = 30;
-
-        //リロード時間
-        private const float RELOAD_TIME = 1.5f;
 
 　　    //物理演算コンポーネント
 　　    [SerializeField] private Rigidbody rigidbody;
@@ -38,6 +31,9 @@ public class PlayerController : MonoBehaviour
         //レーザープリンターの描画コンポーネント
         [SerializeField] private LineRenderer laserLineRenderer;
 
+        //武器のデータ
+        [SerializeField] private WeaponData CurrentWeapon;
+
         //自動生成されたインプット
         private PlayerInputActions inputActions;
 
@@ -47,6 +43,9 @@ public class PlayerController : MonoBehaviour
 
         //リロードしているか
         private bool isReloading;
+
+        //射撃可能か
+        private bool canShot = true;
 　　
         //現在の弾数
         public int CurrentAmmo {  get; private set; }
@@ -56,11 +55,19 @@ public class PlayerController : MonoBehaviour
 　　
 　　    private void Awake()
 　　    {
-            CurrentAmmo = MAX_AMMO;
+            if(CurrentWeapon != null)
+            {
+                CurrentAmmo = CurrentWeapon.MaxAmmo;
+            }
+            else
+            {
+                Debug.LogError("WeaponDataがありません");
+            }
 
 　　        inputActions = new PlayerInputActions();
 　　        inputActions.Player.Fire.performed += OnFire;
             inputActions.Player.Reload.performed += OnReload;
+
 
 　　        if (UnityEngine.Camera.main != null) 
 　　        {
@@ -70,6 +77,8 @@ public class PlayerController : MonoBehaviour
 　　        {
 　　            Debug.LogError("MainCameraが見つかりません");
 　　        }
+
+          
 　　    }
 　　
 　　    private void OnEnable()
@@ -131,10 +140,55 @@ public class PlayerController : MonoBehaviour
 　　
 　　    private void OnFire(InputAction.CallbackContext context)
 　　    {
-　　        Ray ray = new Ray(mainCameraTransform.position,mainCameraTransform.forward);
+            if(canShot || isReloading || CurrentWeapon == null)
+            {
+                return;
+            }
+
+            switch(CurrentWeapon.WeaponFireType)
+            {
+                case Enum.FireType.SemAuto:
+                    ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                    break;
+
+                case Enum.FireType.Burst:
+
+                    break;
+
+                case Enum.FireType.FullAuto:
+                    break;
+
+                default:
+                    Debug.LogWarning($"割り当てられていない攻撃タイプがあります{CurrentWeapon.WeaponFireType}");
+                    break;
+            }
+　　    }
+        private async UniTaskVoid ShootSemAutoAsync(CancellationToken token)
+        {
+
+            if(CurrentAmmo == 0)
+            {
+                ReloadAsync().Forget();
+                return;
+            }
+            canShot = false;
+
+            CurrentAmmo--;
+            Debug.Log($"セミオートで撃った!弾数残り{CurrentAmmo}");
+            Shoot();
+
+            await UniTask.Delay(System.TimeSpan.FromSeconds(CurrentWeapon.FireRate), cancellationToken:token);
+
+            canShot = true;
+        }
+
+        //共通の攻撃処理
+        private void Shoot()
+        {
+            Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
 
             //光線に何かが当たったか判定
-            if (Physics.Raycast(ray,out RaycastHit hitInfo, ATACK_RANGE))
+            if (Physics.Raycast(ray, out RaycastHit hitInfo, ATACK_RANGE))
             {
                 Debug.Log($"{hitInfo.collider.name}に命中!");
 
@@ -144,14 +198,15 @@ public class PlayerController : MonoBehaviour
                 //
                 if (target != null)
                 {
-                    target.TakeDamage(ATACK_DAMAGE);
+                    target.TakeDamage(CurrentWeapon.AttackPower);
                 }
             }
-　　    }
+
+        }
 
         private void OnReload(InputAction.CallbackContext context)
         {
-            if (isReloading || CurrentAmmo == MAX_AMMO)
+            if (isReloading || CurrentAmmo == CurrentWeapon.MaxAmmo)
             {
                 return;
             }
@@ -163,9 +218,9 @@ public class PlayerController : MonoBehaviour
             isReloading = true;
             Debug.Log("リロード中");
 
-            await UniTask.Delay(TimeSpan.FromSeconds(RELOAD_TIME), cancellationToken: this.GetCancellationTokenOnDestroy());
+            await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.ReloadTime), cancellationToken: this.GetCancellationTokenOnDestroy());
 
-            CurrentAmmo = MAX_AMMO;
+            CurrentAmmo = CurrentWeapon.MaxAmmo;
             isReloading = false;
             Debug.Log("リロード完了");
         }

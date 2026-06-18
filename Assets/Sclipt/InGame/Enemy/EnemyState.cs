@@ -1,5 +1,5 @@
 using UnityEngine;
-using Core.InterFsce;
+using Core.InterFace;
 using UnityEngine.Events;
 
 namespace TPSRoguelite.InGame.Enemy 

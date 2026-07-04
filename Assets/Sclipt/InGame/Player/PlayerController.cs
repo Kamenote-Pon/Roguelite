@@ -46,6 +46,9 @@ public class PlayerController : MonoBehaviour
 
         //射撃可能か
         private bool canShot = true;
+
+        //射撃のキャンセルトークン
+        private CancellationTokenSource fireCts;
 　　
         //現在の弾数
         public int CurrentAmmo {  get; private set; }
@@ -55,7 +58,7 @@ public class PlayerController : MonoBehaviour
 　　
 　　    private void Awake()
 　　    {
-            if(CurrentWeapon != null)
+            if(CurrentWeapon != null)// ゲーム開始時に、マガジンに弾をフル装填する
             {
                 CurrentAmmo = CurrentWeapon.MaxAmmo;
             }
@@ -65,7 +68,8 @@ public class PlayerController : MonoBehaviour
             }
 
 　　        inputActions = new PlayerInputActions();
-　　        inputActions.Player.Fire.performed += OnFire;
+            inputActions.Player.Fire.started += OnFire; //押し続けていると呼ばれる
+            inputActions.Player.Fire.canceled += OnFire;
             inputActions.Player.Reload.performed += OnReload;
 
 
@@ -137,36 +141,49 @@ public class PlayerController : MonoBehaviour
 　　        //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
 　　        CurrentVelocity = rigidbody.linearVelocity;
 　　    }
-　　
-　　    private void OnFire(InputAction.CallbackContext context)
-　　    {
-            if(canShot || isReloading || CurrentWeapon == null)
+
+        private void OnFire(InputAction.CallbackContext context)
+        {
+            if (context.started)
             {
-                return;
-            }
+                // クールダウン中やリロード中（撃てない状態）なら、連打されても完全に無視する！
+                if (!canShot || isReloading || CurrentWeapon == null)
+                {
+                    return;
+                }
+                fireCts = new CancellationTokenSource();
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(fireCts.Token, this.GetCancellationTokenOnDestroy());
 
-            switch(CurrentWeapon.WeaponFireType)
+                switch (CurrentWeapon.WeaponFireType)
+                {
+                    case Enum.FireType.SemAuto:
+                        ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                        break;
+
+                    case Enum.FireType.Burst:
+                        ShootBurstAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                        break;
+
+                    case Enum.FireType.FullAuto:
+                        ShootFireFullAutoAsync(linkedCts.Token).Forget();
+                        break;
+
+                    default:
+                        Debug.LogWarning($"割り当てられていない攻撃タイプがあります{CurrentWeapon.WeaponFireType}");
+                        break;
+                }
+            }
+            if(context.canceled)
             {
-                case Enum.FireType.SemAuto:
-                    ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();
-                    break;
-
-                case Enum.FireType.Burst:
-
-                    break;
-
-                case Enum.FireType.FullAuto:
-                    break;
-
-                default:
-                    Debug.LogWarning($"割り当てられていない攻撃タイプがあります{CurrentWeapon.WeaponFireType}");
-                    break;
+                fireCts?.Cancel();
+                fireCts?.Dispose();
+                fireCts= null;
             }
-　　    }
+        }
         private async UniTaskVoid ShootSemAutoAsync(CancellationToken token)
         {
 
-            if(CurrentAmmo == 0)
+            if(CurrentAmmo <= 0)
             {
                 ReloadAsync().Forget();
                 return;
@@ -182,6 +199,52 @@ public class PlayerController : MonoBehaviour
             canShot = true;
         }
 
+        private async UniTaskVoid ShootBurstAsync(CancellationToken token)
+        {
+            canShot = false;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if(CurrentAmmo <= 0)
+                {
+                    ReloadAsync().Forget();
+                    break;
+                }
+                CurrentAmmo--;
+                Shoot();
+                Debug.Log($"バースト!残弾数 : {CurrentAmmo}");
+
+                await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.Fireinterval),cancellationToken:token);
+            }
+            await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireRate),cancellationToken:token);
+            canShot = true;
+        }
+
+        private async UniTaskVoid ShootFireFullAutoAsync(CancellationToken token)
+        {
+            canShot=false;
+
+            while (!token.IsCancellationRequested)
+            {
+                if(CurrentAmmo <= 0)
+                {
+                    ReloadAsync().Forget();
+                    break;
+                }
+
+                CurrentAmmo--;
+                Debug.Log($"フルオート!残弾数 : {CurrentAmmo}");
+                Shoot();
+
+                bool isCanceled = await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.Fireinterval), cancellationToken: token).SuppressCancellationThrow();
+                if( isCanceled)
+                {
+                    break;
+                }
+            }
+            await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireRate), cancellationToken:this.GetCancellationTokenOnDestroy());
+            canShot = true;
+        }
         //共通の攻撃処理
         private void Shoot()
         {

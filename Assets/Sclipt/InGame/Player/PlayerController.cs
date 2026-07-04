@@ -1,10 +1,12 @@
 using Core.InterFace;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using Cysharp.Threading.Tasks;
 using System;
-using TPSRoguelite.InGame.Data;
 using System.Threading;
+using Core.MasterData;
+using TPSRoguelite.InGame.Enum;
 
 namespace TPSRoguelite.InGame.Player { 
 
@@ -32,7 +34,7 @@ public class PlayerController : MonoBehaviour
         [SerializeField] private LineRenderer laserLineRenderer;
 
         //武器のデータ
-        [SerializeField] private WeaponData CurrentWeapon;
+        private WeaponDataRecords CurrentWeapon;
 
         //自動生成されたインプット
         private PlayerInputActions inputActions;
@@ -154,7 +156,7 @@ public class PlayerController : MonoBehaviour
                 fireCts = new CancellationTokenSource();
                 var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(fireCts.Token, this.GetCancellationTokenOnDestroy());
 
-                switch (CurrentWeapon.WeaponFireType)
+                switch ((FireType)CurrentWeapon.WeaponFireType)
                 {
                     case Enum.FireType.SemAuto:
                         ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();

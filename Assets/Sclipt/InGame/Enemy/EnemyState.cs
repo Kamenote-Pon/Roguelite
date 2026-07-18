@@ -8,7 +8,7 @@ namespace TPSRoguelite.InGame.Enemy
     public class EnemyState : MonoBehaviour,IDamageable
     {
         //ìGÇÃÉfÅ[É^
-         public EnemyDataRecords EnemyDataAsset { get;private set; }
+         public EnemyDataRecord EnemyDataAsset { get;private set; }
 
         //åªç›ÇÃëÃóÕ
         public int CurrentHP { get; private set; }
@@ -16,7 +16,12 @@ namespace TPSRoguelite.InGame.Enemy
 
         public event UnityAction<EnemyState> OnRetuenToPoolAction;
         
-        private void OnEnable()
+        public void Initialize(ulong id)
+        {
+            EnemyDataAsset = MasterDataAccessor.Instance.GetById<EnemyDataRecord>(id);
+        }
+
+        public void SetUp()
         {
             if (EnemyDataAsset == null)
             {
@@ -24,7 +29,7 @@ namespace TPSRoguelite.InGame.Enemy
                 return;
             }
             CurrentHP = EnemyDataAsset.MaxHP;
-
+            gameObject.SetActive(true);
         }
 
         public void TakeDamage(int damageAmount)

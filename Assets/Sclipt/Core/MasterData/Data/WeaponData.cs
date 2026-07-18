@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Core.MasterData
 {
     [Serializable]
-    public class WeaponDataRecords : IMasterData
+    public class WeaponDataRecord : IMasterData
     {
         [field: SerializeField] public ulong Id { get; private set; }
 
@@ -31,8 +31,8 @@ namespace Core.MasterData
         [field: SerializeField] public float ReloadTime { get; private set; }
     }
     [CreateAssetMenu(fileName = "NewWeaponData", menuName = "Scriptable Objects/WeaponData")]
-    public class WeaponData : ScriptableObject, IMasterDataContainer<WeaponDataRecords>
+    public class WeaponData : ScriptableObject, IMasterDataContainer<WeaponDataRecord>
     {
-        [field: SerializeField] public List<WeaponDataRecords> Records { get; private set; }
+        [field: SerializeField] public List<WeaponDataRecord> Records { get; private set; }
     }
 }

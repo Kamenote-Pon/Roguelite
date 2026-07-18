@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Core.MasterData
 {
     [Serializable]
-    public class EnemyDataRecords : IMasterData
+    public class EnemyDataRecord : IMasterData
     {
         [field:SerializeField] public ulong Id { get; private set; }
         //“G‚Ì–¼‘O
@@ -19,8 +19,8 @@ namespace Core.MasterData
 
     }
     [CreateAssetMenu(fileName = "NewEnemyData",menuName ="Scriptable Objects/EnemyData")]
-    public class EnemyData : ScriptableObject, IMasterDataContainer<EnemyDataRecords>
+    public class EnemyData : ScriptableObject, IMasterDataContainer<EnemyDataRecord>
     {
-        [field :  SerializeField] public List<EnemyDataRecords> Records {  get; private set; }
+        [field :  SerializeField] public List<EnemyDataRecord> Records {  get; private set; }
     }
 }

@@ -33,8 +33,11 @@ public class PlayerController : MonoBehaviour
         //レーザープリンターの描画コンポーネント
         [SerializeField] private LineRenderer laserLineRenderer;
 
+        //武器のID(デフォルトは1)
+        [SerializeField] private ulong weaponId = 1;
+
         //武器のデータ
-        private WeaponDataRecords CurrentWeapon;
+        private WeaponDataRecord CurrentWeapon;
 
         //自動生成されたインプット
         private PlayerInputActions inputActions;
@@ -60,7 +63,14 @@ public class PlayerController : MonoBehaviour
 　　
 　　    private void Awake()
 　　    {
-            if(CurrentWeapon != null)// ゲーム開始時に、マガジンに弾をフル装填する
+            gameObject.SetActive(false);
+　　    }
+
+        public void SetUp()
+        {
+            CurrentWeapon = MasterDataAccessor.Instance.GetById<WeaponDataRecord>(weaponId);
+
+            if (CurrentWeapon != null)// ゲーム開始時に、マガジンに弾をフル装填する
             {
                 CurrentAmmo = CurrentWeapon.MaxAmmo;
             }
@@ -69,31 +79,32 @@ public class PlayerController : MonoBehaviour
                 Debug.LogError("WeaponDataがありません");
             }
 
-　　        inputActions = new PlayerInputActions();
+            inputActions = new PlayerInputActions();
             inputActions.Player.Fire.started += OnFire; //押し続けていると呼ばれる
             inputActions.Player.Fire.canceled += OnFire;
             inputActions.Player.Reload.performed += OnReload;
 
 
-　　        if (UnityEngine.Camera.main != null) 
-　　        {
-　　            mainCameraTransform = UnityEngine.Camera.main.transform;
-　　        }
-　　        else
-　　        {
-　　            Debug.LogError("MainCameraが見つかりません");
-　　        }
+            if (UnityEngine.Camera.main != null)
+            {
+                mainCameraTransform = UnityEngine.Camera.main.transform;
+            }
+            else
+            {
+                Debug.LogError("MainCameraが見つかりません");
+            }
 
-          
-　　    }
-　　
-　　    private void OnEnable()
+            gameObject.SetActive(true);
+
+        }
+
+        private void OnEnable()
 　　    {
-　　        inputActions.Enable();
+　　        inputActions?.Enable();
 　　    }
 　　    private void OnDisable()
 　　    {
-　　        inputActions.Disable();
+　　        inputActions?.Disable();
 　　    }
 　　
 　　
@@ -108,11 +119,20 @@ public class PlayerController : MonoBehaviour
 　　    }
 　　    private void Move()//移動処理
 　　    {
-　　        if(rigidbody == null)
+　　        if(rigidbody == null || mainCameraTransform == null)
 　　        {
-　　            Debug.LogError("Rigidbodyが設定されていません");
 　　            return;
 　　        }
+
+            Vector3 cameraforward = mainCameraTransform.forward;
+            cameraforward.y= 0;
+            cameraforward.Normalize();
+
+            if(cameraforward != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(cameraforward);
+                rigidbody.rotation = Quaternion.Slerp(rigidbody.rotation, targetRotation, ROTATE_SPEED * Time.deltaTime);
+            }
 　　
 　　        //入力がない場合はピタッと止めておく
 　　        if(moveInput == Vector2.zero)
@@ -123,19 +143,11 @@ public class PlayerController : MonoBehaviour
 　　        }
 　　
 　　        //カメラ基準の計算に変更
-            Vector3 cameraFoward = mainCameraTransform.forward;
             Vector3 cameraRight = mainCameraTransform.right;
-
-            cameraFoward.y = 0f;
             cameraRight.y = 0f;
-            cameraFoward.Normalize();
             cameraRight.Normalize();
 
-            Vector3 moveDirection = (cameraFoward * moveInput.y + cameraRight * moveInput.x).normalized;
-
-            //キャラクターを進行方向へ滑らかに振り向かせる
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            rigidbody.rotation = Quaternion.Slerp(rigidbody.rotation,targetRotation,ROTATE_SPEED * Time.deltaTime);
+            Vector3 moveDirection = (cameraforward * moveInput.y + cameraRight * moveInput.x).normalized;
 
             Vector3 targetVelocity = moveDirection * moveSpeed;
             rigidbody.linearVelocity = new Vector3(targetVelocity.x, rigidbody.linearVelocity.y, targetVelocity.z);

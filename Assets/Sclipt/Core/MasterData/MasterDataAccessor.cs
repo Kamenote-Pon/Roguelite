@@ -14,17 +14,13 @@ namespace Core.MasterData
 
 
 
-        /// <summary>
         /// 外部からアクセスするためのインスタンス
-        /// </summary>
         public static MasterDataAccessor Instance { get; private set; }
 
-        /// <summary>
         /// あらゆる型の辞書を「レコードの型（Type）」をキーにして一括で保持する
-        /// </summary>
         private Dictionary<Type, object> masterDataDictionaries = new Dictionary<Type, object>();
 
-        new void Awake()
+        private void Awake()
         {
             if (Instance == null)
             {
@@ -44,15 +40,13 @@ namespace Core.MasterData
 
         public async UniTask InitializeAsync()
         {
-            await UniTask.WhenAll(LoadAsync<EnemyData, EnemyDataRecords>(ENEMY_LABEL), LoadAsync<WeaponData, WeaponDataRecords>(WEAPON_LABEL));
+            await UniTask.WhenAll(LoadAsync<EnemyData, EnemyDataRecord>(ENEMY_LABEL), LoadAsync<WeaponData, WeaponDataRecord>(WEAPON_LABEL));
 
             Debug.Log("全てのマスターデータの読み込みが完了しました。");
         }
 
-        /// <summary>
         /// ジェネリクスを用いた汎用ロード処理
         /// TAssetはSO、TRecordはレコードデータであることをインターフェースで保証する
-        /// </summary>
         private async UniTask LoadAsync<TAsset, TRecord>(string label)
             where TAsset : ScriptableObject, IMasterDataContainer<TRecord>
             where TRecord : IMasterData
@@ -76,10 +70,8 @@ namespace Core.MasterData
             masterDataDictionaries[typeof(TRecord)] = dict;
         }
 
-        /// <summary>
         /// 型とIDを指定して、該当するマスターデータを1つ取得する
         /// 使い方： accessor.GetById<EnemyDataRecord>(101);
-        /// </summary>
         public TRecord GetById<TRecord>(ulong id) where TRecord : IMasterData
         {
             if (masterDataDictionaries.ContainsKey(typeof(TRecord)))
@@ -107,10 +99,8 @@ namespace Core.MasterData
             return default;
         }
 
-        /// <summary>
         /// 型を指定して、その型のすべてのマスターデータを取得する
         /// 使い方： foreach(var enemy in accessor.GetAll<EnemyDataRecord>()) { ... }
-        /// </summary>
         public IReadOnlyCollection<TRecord> GetAll<TRecord>() where TRecord : IMasterData
         {
             if (masterDataDictionaries.ContainsKey(typeof(TRecord)))
@@ -166,9 +156,7 @@ namespace Core.MasterData
             return false;
         }
 
-        /// <summary>
         /// 型を指定して、その型のすべてのマスターデータの数を取得する
-        /// </summary>
         public int Count<TRecord>() where TRecord : IMasterData
         {
             if (masterDataDictionaries.ContainsKey(typeof(TRecord)))

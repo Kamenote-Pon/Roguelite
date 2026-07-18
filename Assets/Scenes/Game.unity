@@ -901,7 +901,7 @@ MonoBehaviour:
   minPitch: -10
   maxPitch: 60
   zoomSpeed: 5
-  targetDistance: -5
+  targetDistance: 3
   targetHightOffset: 1.2
   targetShoulderOffset: 0.8
 --- !u!1 &1568714455

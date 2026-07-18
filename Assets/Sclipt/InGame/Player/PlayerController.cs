@@ -36,6 +36,9 @@ public class PlayerController : MonoBehaviour
         //武器のID(デフォルトは1)
         [SerializeField] private ulong weaponId = 1;
 
+        //マズルフラッシュのエフェクト
+        [SerializeField] private ParticleSystem muzzleFlash;
+
         //武器のデータ
         private WeaponDataRecord CurrentWeapon;
 
@@ -262,6 +265,11 @@ public class PlayerController : MonoBehaviour
         //共通の攻撃処理
         private void Shoot()
         {
+            if(muzzleFlash != null)
+            {
+                muzzleFlash.Play();
+            }
+
             Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
 
             //光線に何かが当たったか判定

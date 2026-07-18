@@ -147,7 +147,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea1964e21ac5e134696ce43706667e01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <EnemyDataAsset>k__BackingField: {fileID: 11400000, guid: f48ae541a5b245b449712af6afdd46cd, type: 2}
+  modeRenderers:
+  - {fileID: 7560602022808297694}
 --- !u!114 &1500857735761406710
 MonoBehaviour:
   m_ObjectHideFlags: 0

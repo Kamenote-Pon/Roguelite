@@ -12,7 +12,10 @@ namespace TPSRoguelite.InGame.Enemy
         //
         private const string PLAYER_TAG_NAME ="Player";
 
+        //ノックバックの強さ
         private const float KNOCKBACK_FOECE = 2.0f;
+
+        //ノックバックの長さ
         private const float KNOCKBACK_DURARION = 0.15f;
 
         //敵の本体

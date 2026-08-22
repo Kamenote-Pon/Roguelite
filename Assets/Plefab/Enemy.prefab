@@ -149,6 +149,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   modeRenderers:
   - {fileID: 7560602022808297694}
+  experienceOrbPrefab: {fileID: 7722440279394928870, guid: 776431aed653f2c47ae456654f5ccf01, type: 3}
 --- !u!114 &1500857735761406710
 MonoBehaviour:
   m_ObjectHideFlags: 0

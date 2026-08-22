@@ -31,7 +31,7 @@ namespace TPSRoguelite.InGame.Camera {
         [SerializeField] private float targetDistance = 3.0f;
 
         //高さ
-        [SerializeField] private float targetHightOffset = 1.2f;
+        [SerializeField] private float targetHeightOffset = 1.2f;
 
         //右にずらす距離(右肩くらい)
         [SerializeField] private float targetShoulderOffset = 0.8f;
@@ -50,7 +50,7 @@ namespace TPSRoguelite.InGame.Camera {
 
         //現在のカメラの位置(滑らかに動かすために必要)
         private float currentDistance = 0f;
-        private float currentHightOffset = 0f;
+        private float currentHeightOffset = 0f;
         private float currentShoulderOffset = 0f;
   
         private void Awake()
@@ -60,6 +60,11 @@ namespace TPSRoguelite.InGame.Camera {
             //マウスカーソルを画面中央にロックして非表示
             Cursor.lockState = CursorLockMode.Locked; //画面中央にロック
             Cursor.visible = false; //マウスカーソルを非表示
+
+            // 最初は通常時の視点をセットしておく
+            currentDistance = targetDistance;
+            currentHeightOffset = targetHeightOffset;
+            currentShoulderOffset = targetShoulderOffset;
         }
    
         private void OnEnable()
@@ -96,14 +101,14 @@ namespace TPSRoguelite.InGame.Camera {
 
             //現在の数値を、目線の数値に向かった滑らかに変化させる(変化させる機能が MathF.Lerp)
             currentDistance = Mathf.Lerp(currentDistance, targetDistance, zoomSpeed * Time.deltaTime);
-            currentHightOffset = Mathf.Lerp(currentHightOffset,targetHightOffset, zoomSpeed * Time.deltaTime);
+            currentHeightOffset = Mathf.Lerp(currentHeightOffset,targetHeightOffset, zoomSpeed * Time.deltaTime);
             currentShoulderOffset = Mathf.Lerp(currentShoulderOffset, targetShoulderOffset, zoomSpeed * Time.deltaTime);
 
             //カメラの回転を計算
             Quaternion rotate = Quaternion.Euler(currentPitch, currentYaw, 0f);
 
             //注視点の計算(カメラが見るところ)
-            Vector3 basePosition = target.position + Vector3.up * currentHightOffset;
+            Vector3 basePosition = target.position + Vector3.up * currentHeightOffset;
 
             //肩越しの起点にするために、カメラにとっての右方向へずらす
             Vector3 shoulderPosition = basePosition + (rotate * Vector3.right *  currentShoulderOffset);
@@ -111,7 +116,7 @@ namespace TPSRoguelite.InGame.Camera {
             //カメラにとっての後ろ方向へ距離をずらす
             Vector3 cameraPosition = shoulderPosition + (rotate * Vector3.forward * currentDistance);
 
-            //カメラの位置と回転を設定
+            //最終的な位置と回転を適用
             transform.position = cameraPosition;
             transform.rotation = rotate;
         }

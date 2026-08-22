@@ -14,8 +14,16 @@ namespace TPSRoguelite.InGame.Enemy
         //点滅時間
         private const float FLASH_DURATION = 0.1f;
 
+        // オーブのドロップ位置の高さのオフセット
+        private const float ORB_DROP_HEIGHT_OFFSET = 0.5f;
+
         //キャラクターのレンダラー
         [SerializeField] private Renderer[] modeRenderers;
+
+        [Header("ドロップアイテム")]
+
+        // ドロップするオーブ
+        [SerializeField] private GameObject experienceOrbPrefab;
 
         //キャラクターの元々の色
         private Color[] defaultColors;
@@ -96,25 +104,18 @@ namespace TPSRoguelite.InGame.Enemy
         private void Die()
         {
             Debug.Log($"{EnemyDataAsset.EnemyName}を倒しました");
+
+            // 経験値オーブをドロップする
+            if (experienceOrbPrefab != null)
+            {
+                Vector3 spawnPosition = transform.position + Vector3.up * ORB_DROP_HEIGHT_OFFSET;
+                Instantiate(experienceOrbPrefab, spawnPosition, Quaternion.identity);
+            }
+
             gameObject.SetActive(false);
             OnRetuenToPoolAction?.Invoke(this);
         }
 
-        //色をリセット
-        private void ResetColor()
-        {
-            if(modeRenderers == null || defaultColors == null)
-            {
-                return;
-            }
-            for(int i = 0;i < modeRenderers.Length; i++)
-            {
-                if(modeRenderers[i] != null)
-                {
-                    modeRenderers[i].material.color = defaultColors[i];
-                }
-            }
-        }
 
         private async UniTaskVoid DamageFlashAsync(CancellationToken token)
         {
@@ -136,5 +137,21 @@ namespace TPSRoguelite.InGame.Enemy
                 ResetColor();
             }
         }
+        //色をリセット
+        private void ResetColor()
+        {
+            if(modeRenderers == null || defaultColors == null)
+            {
+                return;
+            }
+            for(int i = 0;i < modeRenderers.Length; i++)
+            {
+                if(modeRenderers[i] != null)
+                {
+                    modeRenderers[i].material.color = defaultColors[i];
+                }
+            }
+        }
+
     }
 }
